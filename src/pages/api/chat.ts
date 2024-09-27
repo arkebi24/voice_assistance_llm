@@ -4,6 +4,7 @@ import { OpenAI as LangchainOpenAI } from "@langchain/openai";
 import { Ollama } from "@langchain/community/llms/ollama";
 import axios from "axios";
 import { z } from "zod"; // Add zod for input validation
+import { NextApiRequest, NextApiResponse } from "next";
 
 dotenv.config();
 
@@ -92,10 +93,12 @@ async function getModelResponse(modelName: string, prompt: string): Promise<stri
   }
 }
 
-export async function POST(req: Request): Promise<ResponseData> {
+export default async function POST(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const body = await req.json();
+    const body = await req.body;
     const { message, model: modelName } = requestSchema.parse(body);
+    console.log(message, modelName);
+    
 
     const prompt = `Be precise and concise, never respond in more than 1-2 sentences! ${message.toLowerCase().split(' ').slice(1).join(' ')}`;
     
@@ -106,12 +109,12 @@ export async function POST(req: Request): Promise<ResponseData> {
     
     const fullMessage = introMessage + gptMessage;
     const base64Audio = await createAudio(fullMessage, voice);
-
-    return {
+    const Result: ResponseData = {
       data: base64Audio,
       contentType: "audio/mp3",
       model: modelName,
     };
+    res.status(200).json(Result);
   } catch (error) {
     console.error("Error processing request:", error);
     throw new Error("Failed to process request");
