@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react";
 //2. Extend Window interface for webkitSpeechRecognition
 declare global {
   interface Window {
+    // eslint-disable-next-line
     webkitSpeechRecognition: any;
   }
 }
@@ -18,14 +19,10 @@ export default function Home() {
   const [model, setModel] = useState<string>("");
   const [response, setResponse] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isListening, setIsListening] = useState(false);
-  const [recognition, setRecognition] = useState<
-    typeof window.webkitSpeechRecognition | null
-  >(null);
-  const silenceTimer = useRef<NodeJS.Timeout | null>(null);
-
   //5. Ref hooks for speech recognition and silence detection
+  // eslint-disable-next-line
   const recognitionRef = useRef<any>(null);
+  // eslint-disable-next-line
   const silenceTimerRef = useRef<any>(null);
 
   //6. Determine CSS class for model display based on state
@@ -96,6 +93,7 @@ export default function Home() {
   );
 
   //9. Process speech recognition results
+  // eslint-disable-next-line
   const handleResult = (event: any): void => {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     let interimTranscript = "";
