@@ -1,6 +1,10 @@
-//1. Import necessary hooks and types from React
 "use client";
 import { useEffect, useState, useRef } from "react";
+import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
+import { BackgroundGradient } from "@/components/ui/background-gradient";
+import { FlipWords } from "@/components/ui/flip-words";
+import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
+import { SparklesCore } from "@/components/ui/sparkles";
 
 //2. Extend Window interface for webkitSpeechRecognition
 declare global {
@@ -18,7 +22,6 @@ export default function Home() {
   const [transcript, setTranscript] = useState<string>("");
   const [model, setModel] = useState<string>("");
   const [response, setResponse] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   //5. Ref hooks for speech recognition and silence detection
   // eslint-disable-next-line
   const recognitionRef = useRef<any>(null);
@@ -29,12 +32,10 @@ export default function Home() {
   const getModelClassName = (model: string): string =>
     model === model && isPlaying ? " prominent-pulse" : "";
 
-  //7. Asynchronous function to handle backend communication
   const sendToBackend = async (
     message: string,
     modelKeyword?: string
   ): Promise<void> => {
-    setIsLoading(true);
     if (modelKeyword) setModel(modelKeyword);
     else if (!model) setModel("gpt-3.5");
 
@@ -67,29 +68,23 @@ export default function Home() {
       //7.5 Handle errors during data transmission or audio playback
       console.error("Error sending data to backend or playing audio:", error);
     }
-    setIsLoading(false);
   };
 
-  //8. Render individual model selection bubbles
   const renderModelBubble = (
     model: string,
     displayName: string,
     bgColor: string
   ): JSX.Element => (
-    <div
-      className={`flex flex-col items-center model-bubble text-center${getModelClassName(
-        model
-      )}`}
-    >
-      {isLoading && model === model && (
-        <div className="loading-indicator"></div>
-      )}
-      <div
-        className={`w-48 h-48 flex items-center justify-center ${bgColor} text-white rounded-full`}
+    <BackgroundGradient className="p-1 rounded-full">
+      <HoverBorderGradient
+        className={`w-48 h-48 flex items-center justify-center text-white rounded-full ${bgColor} ${getModelClassName(
+          model
+        )}`}
+        onClick={() => sendToBackend(`Use ${model} model`, model)}
       >
         {displayName}
-      </div>
-    </div>
+      </HoverBorderGradient>
+    </BackgroundGradient>
   );
 
   //9. Process speech recognition results
@@ -139,13 +134,11 @@ export default function Home() {
     recognitionRef.current.start();
   };
 
-  //11. Clean up with useEffect on component unmount
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    return () => {
       if (recognitionRef.current) recognitionRef.current.stop();
-    },
-    []
-  );
+    };
+  }, []);
 
   //12. Function to terminate speech recognition
   const stopRecording = () => {
@@ -154,33 +147,46 @@ export default function Home() {
 
   //13. Toggle recording state
   const handleToggleRecording = () => {
-    if (!isRecording && !isPlaying) startRecording();
-    else if (isRecording) stopRecording();
+    if (!isRecording && !isPlaying) {
+      startRecording();
+    } else if (isRecording) {
+      stopRecording();
+      sendToBackend(transcript);
+    }
   };
 
   //14. Main component rendering method
   return (
-    //14.1 Render recording and transcript status
-    <main className="flex h-screen flex-col items-center bg-gray-100">
-      {(isRecording || transcript || response) && (
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-full m-auto p-4 bg-white">
-          <div className="flex justify-center items-center w-full">
-            <div className="text-center">
-              <p className="text-xl font-bold">
-                {isRecording ? "Listening" : ""}
-              </p>
-              {transcript && (
-                <div className="p-2 h-full mt-4 text-center">
-                  <p className="text-lg mb-0">{transcript}</p>
+    <div className="max-h-screen h-screen">
+      <BackgroundBeamsWithCollision className="h-96 md:h-screen bg-gradient-to-b from-white to-neutral-100 dark:from-neutral-950 dark:to-neutral-800 relative flex items-center w-full justify-center overflow-hidden">
+        <main className="flex h-screen flex-col items-center justify-center bg-transparent  overflow-hidden">
+          <SparklesCore
+            id="tsparticles"
+            background="transparent"
+            minSize={0.6}
+            maxSize={1.4}
+            particleDensity={100}
+            className="w-full h-full absolute"
+            particleColor="#FFFFFF"
+          />
+          {(isRecording || transcript || response) && (
+            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-full m-auto p-4 bg-white bg-opacity-80 rounded-lg shadow-lg">
+              <div className="flex justify-center items-center w-full">
+                <div className="text-center">
+                  <FlipWords
+                    words={["Listening...", "Processing...", "Responding..."]}
+                    className="text-2xl font-bold mb-2"
+                  />
+                  {transcript && (
+                    <div className="p-2 h-full mt-4 text-center">
+                      <p className="text-lg mb-0">{transcript}</p>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
-      {/* 14.2 Render model selection and recording button */}
-      <div className="flex items-center justify-center h-screen w-full">
-        <div className="w-full">
+          )}
+
           <div className="grid grid-cols-3 gap-8 mt-10">
             {renderModelBubble("gpt", "GPT-3.5", "bg-indigo-500")}
             {renderModelBubble("gpt4", "GPT-4", "bg-teal-500")}
@@ -191,12 +197,14 @@ export default function Home() {
               "bg-purple-500"
             )}
             <div className="flex flex-col items-center">
-              <button
+              <HoverBorderGradient
                 onClick={handleToggleRecording}
                 className={`m-auto flex items-center justify-center ${
-                  isRecording ? "bg-red-500 prominent-pulse" : "bg-blue-500"
-                } rounded-full w-48 h-48 focus:outline-none`}
-              ></button>
+                  isRecording ? "bg-red-500" : "bg-blue-500"
+                } rounded-full w-48 h-48 focus:outline-none text-white font-bold text-xl`}
+              >
+                {isRecording ? "Stop" : "Start"}
+              </HoverBorderGradient>
             </div>
             {renderModelBubble("local llama", "Llama2 (Ollama)", "bg-red-500")}
             {renderModelBubble(
@@ -215,8 +223,8 @@ export default function Home() {
               "bg-lime-500"
             )}
           </div>
-        </div>
-      </div>
-    </main>
+        </main>
+      </BackgroundBeamsWithCollision>
+    </div>
   );
 }
